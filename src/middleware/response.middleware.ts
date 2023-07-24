@@ -24,7 +24,6 @@ export class UserInfoFormatMiddleware
     return async (ctx: Context, next: NextFunction) => {
       const result = await next();
       const _data = result.data;
-      console.log(_data);
       if (Array.isArray(_data)) {
         _data.forEach(item => {
           delete item.password;
@@ -41,10 +40,9 @@ export class UserInfoFormatMiddleware
     };
   }
 
-  // match(ctx: Context): boolean {
-  //   // 下面的匹配到的路由会执行此中间件
-  //   if (ctx.path.indexOf('/user') !== -1) {
-  //     return true;
-  //   }
-  // }
+  match(ctx: Context): boolean {
+    // 下面的匹配到的路由不执行此中间件
+    const ignore = ctx.path.indexOf('/logout') !== -1;
+    return !ignore;
+  }
 }

@@ -1,5 +1,6 @@
 import { JwtService } from '@midwayjs/jwt';
-import { Provide, Inject } from '@midwayjs/core';
+import { Provide, Inject, Scope } from '@midwayjs/core';
+import { ScopeEnum } from '@midwayjs/decorator';
 import { UserInfoEntity } from '../../user/entity/info.entity';
 
 interface IPayload {
@@ -8,6 +9,7 @@ interface IPayload {
 }
 
 @Provide()
+@Scope(ScopeEnum.Request, { allowDowngrade: true })
 export class AuthService {
   @Inject()
   jwtService: JwtService;
@@ -21,7 +23,7 @@ export class AuthService {
       {
         ...payload,
       },
-      'secret',
+      'lyu-midway-server',
       options
     );
   }

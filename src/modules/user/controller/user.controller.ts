@@ -33,8 +33,32 @@ export class APIController {
   @Get('/user')
   async getUser(@Query('id') id: number): Promise<IALLResult> {
     const user = await this.userService.findOneById(id);
-    console.log('user', user);
     return { msg: '查询成功', data: user };
+  }
+
+  @Post('/logout')
+  async logout() {
+    const access_token = this.ctx.cookies.get('access_token');
+    const refresh_token = this.ctx.cookies.get('refresh_token');
+
+    // token失效：加入黑名单
+    try {
+      const tokenCache = await this.redisService.get(`token:${access_token}`);
+      if (tokenCache) {
+        await this.redisService.del(`token:${access_token}`);
+      }
+      await this.redisService.set(
+        `black-list-token:${refresh_token}`,
+        1,
+        'EX',
+        60 * 60 * 24 * 7
+      );
+      return {
+        msg: '退出登录成功',
+      };
+    } catch (error) {
+      throw new httpError.BadRequestError('用户名不存在');
+    }
   }
 
   @Post('/login')
@@ -50,30 +74,23 @@ export class APIController {
       if (passUser) {
         delete passUser.password;
         const refresh_token = await this.authService.createToken(passUser, {
-          expiresIn: '3d',
+          expiresIn: '7d',
         });
-        const token = await this.authService.createToken(
-          { ...passUser, refresh_token },
-          {
-            expiresIn: 60 * 30,
-          }
-        );
-        const tokenCache = await this.redisService.get(
-          JSON.stringify(passUser.id)
-        );
+        const access_token = await this.authService.createToken(passUser, {
+          expiresIn: 60 * 30,
+        });
+        const tokenCache = await this.redisService.get(`token:${access_token}`);
         if (tokenCache) {
-          await this.redisService.del(JSON.stringify(passUser.id));
+          await this.redisService.del(`token:${access_token}`);
         }
         await this.redisService.set(
-          JSON.stringify(passUser.id),
-          token,
+          `token:${access_token}`,
+          JSON.stringify(passUser),
           'EX',
           60 * 30
         );
-        this.ctx.cookies.set('_id', JSON.stringify(passUser.id), {
-          encrypt: true,
-        });
-        this.ctx.cookies.set('_token', token);
+        this.ctx.cookies.set('refresh_token', refresh_token);
+        this.ctx.cookies.set('access_token', access_token);
         return {
           msg: '登录成功',
           data: { ...passUser },
