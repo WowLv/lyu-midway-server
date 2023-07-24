@@ -1,10 +1,11 @@
-import { Configuration, App, Inject } from '@midwayjs/core';
+import { Configuration, App } from '@midwayjs/core';
 import * as koa from '@midwayjs/koa';
 import * as validate from '@midwayjs/validate';
 import * as info from '@midwayjs/info';
 import * as orm from '@midwayjs/orm';
-import * as bull from '@midwayjs/bull'; // 基于redis的任务队列
+// import * as bull from '@midwayjs/bull'; // 基于redis的任务队列
 import * as jwt from '@midwayjs/jwt';
+import * as redis from '@midwayjs/redis';
 import { join } from 'path';
 import { DefaultErrorFilter } from './filter/default.filter';
 // import { NotFoundFilter } from './filter/notfound.filter';
@@ -17,8 +18,9 @@ import { JwtMiddleware } from './middleware/jwt.middleware';
     orm,
     koa,
     validate,
-    bull,
+    // bull,
     jwt,
+    redis,
     {
       component: info,
       enabledEnvironment: ['local'],
@@ -30,8 +32,8 @@ export class ContainerLifeCycle {
   @App()
   app: koa.Application;
 
-  @Inject()
-  bullFramework: bull.Framework;
+  // @Inject()
+  // bullFramework: bull.Framework;
 
   async onReady() {
     // add middleware

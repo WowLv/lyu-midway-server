@@ -11,6 +11,7 @@ import {
 import { Context } from '@midwayjs/koa';
 import { UserService } from '../service/user.service';
 import { AuthService } from '../../auth/service/auth.service';
+import { RedisService } from '@midwayjs/redis';
 import { UserInfoFormatMiddleware } from '../../../middleware/response.middleware';
 import { IALLResult } from '../../../interface';
 import { UserDTO } from '../dto/user.dto';
@@ -25,6 +26,9 @@ export class APIController {
 
   @Inject()
   authService: AuthService;
+
+  @Inject()
+  redisService: RedisService;
 
   @Get('/user')
   async getUser(@Query('id') id: number): Promise<IALLResult> {
@@ -45,8 +49,35 @@ export class APIController {
       const passUser = await this.userService.login({ userName, password });
       if (passUser) {
         delete passUser.password;
-        const token = await this.authService.createToken(passUser);
-        return { msg: '登录', data: { user: passUser, token } };
+        const refresh_token = await this.authService.createToken(passUser, {
+          expiresIn: '3d',
+        });
+        const token = await this.authService.createToken(
+          { ...passUser, refresh_token },
+          {
+            expiresIn: 60 * 30,
+          }
+        );
+        const tokenCache = await this.redisService.get(
+          JSON.stringify(passUser.id)
+        );
+        if (tokenCache) {
+          await this.redisService.del(JSON.stringify(passUser.id));
+        }
+        await this.redisService.set(
+          JSON.stringify(passUser.id),
+          token,
+          'EX',
+          60 * 30
+        );
+        this.ctx.cookies.set('_id', JSON.stringify(passUser.id), {
+          encrypt: true,
+        });
+        this.ctx.cookies.set('_token', token);
+        return {
+          msg: '登录成功',
+          data: { ...passUser },
+        };
       } else {
         throw new httpError.BadRequestError('密码错误');
       }

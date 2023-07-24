@@ -16,15 +16,22 @@ export default {
     synchronize: true, // 如果第一次使用，不存在表，有同步的需求可以写 true
     logging: true,
   },
-  bull: {
-    defaultQueueOptions: {
-      redis: 'redis://127.0.0.1:6379',
-      removeOnComplete: 3, // 成功后移除任务记录，最多保留最近 3 条记录
-      removeOnFail: 10, // 失败后移除任务记录
-    },
-  },
+  // bull: {
+  //   defaultQueueOptions: {
+  //     redis: 'redis://127.0.0.1:6379',
+  //     removeOnComplete: 3, // 成功后移除任务记录，最多保留最近 3 条记录
+  //     removeOnFail: 10, // 失败后移除任务记录
+  //   },
+  // },
   jwt: {
     secret: 'lyu-midway-server', // fs.readFileSync('xxxxx.key')
-    expiresIn: '7d',
+    expiresIn: '3d',
+  },
+  redis: {
+    client: {
+      port: 6379, // Redis port
+      host: '127.0.0.1', // Redis host
+      db: 0,
+    },
   },
 } as MidwayConfig;
